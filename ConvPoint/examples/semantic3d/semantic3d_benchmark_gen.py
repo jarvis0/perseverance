@@ -10,21 +10,14 @@ parser.add_argument("--refdata", type=str, default="./results")
 parser.add_argument("--reflabel", type=str, default="./results")
 args = parser.parse_args()
 
-filenames = [
-        ["M1v19","M1v19.labels"],
-        ["M1v20","M1v20.labels"],
-        ["M2v19","M1v19.labels"],
-        ["M2v20","M2v20.labels"],
-]
-
-
+filenames = [f.split('.')[0] for f in os.listdir(args.testdir) if os.path.isfile(os.path.join(args.testdir, f))]
 os.makedirs(args.savedir, exist_ok=True)
 
 for fname in filenames:
     print(fname[0])
-    data_filename = os.path.join(args.testdir, fname[0]+".txt")
-    dest_filaname = os.path.join(args.savedir, fname[1])
-    refdata_filename = os.path.join(args.refdata, fname[0]+"_voxels.txt")
-    reflabel_filename = os.path.join(args.reflabel, fname[0]+"_voxels.npy")
+    data_filename = os.path.join(args.testdir, fname+".txt")
+    dest_filaname = os.path.join(args.savedir, fname+".labels")
+    refdata_filename = os.path.join(args.refdata, fname+"_voxels.txt")
+    reflabel_filename = os.path.join(args.reflabel, fname+"_voxels.npy")
 
     sem3D.project_labels_to_pc(dest_filaname, data_filename, refdata_filename, reflabel_filename)

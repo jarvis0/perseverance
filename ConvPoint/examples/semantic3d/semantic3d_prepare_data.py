@@ -31,7 +31,9 @@ def wred(str):
     return bcolors.FAIL+str+bcolors.ENDC
 
 
-filelist_train=[
+filelist_train = [f.split('.')[0] for f in os.listdir(args.testdir) if os.path.isfile(os.path.join(args.testdir, f))][0: 18:]
+
+[
 	"M1v1",
   "M1v2",
   "M1v3",
