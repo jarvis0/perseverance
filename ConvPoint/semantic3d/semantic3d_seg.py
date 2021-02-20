@@ -222,7 +222,7 @@ def get_model(model_name, input_channels, output_channels, args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--processeddir', type=str, required=True, default='../../data/processed/')
-    parser.add_argument("--savedir", type=str, required=True, default='../../raw_results')
+    parser.add_argument("--savedir", type=str, required=True, default='../../data/raw_results')
 	parser.add_argument("--trainingdir", type=str, required=True)
     parser.add_argument('--block_size', type=float, default=8)
     parser.add_argument("--epochs", type=int, default=50)

@@ -4,10 +4,10 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--testdir', '-s', help='Path to data folder')
-parser.add_argument("--savedir", type=str, default="./results")
-parser.add_argument("--refdata", type=str, default="./results")
-parser.add_argument("--reflabel", type=str, default="./results")
+parser.add_argument('--testdir', type=str, required=True, default='../../data/raw/TEST/')
+parser.add_argument("--savedir", type=str, required=True, default='../../data/results/')
+parser.add_argument("--refdata", type=str, required=True, default='../../data/processed/test/pointcloud_txt/')
+parser.add_argument("--reflabel", type=str, required=True)
 args = parser.parse_args()
 
 filenames = [f.split('.')[0] for f in os.listdir(args.testdir) if os.path.isfile(os.path.join(args.testdir, f))]
