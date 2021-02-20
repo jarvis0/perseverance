@@ -1,9 +1,4 @@
 # Semantic3D Example with ConvPoint
-
-# add the parent folder to the python path to access convpoint library
-import sys
-sys.path.append('/content/drive/MyDrive/ConvPoint')
-
 import numpy as np
 import argparse
 from datetime import datetime
@@ -20,6 +15,9 @@ from sklearn.metrics import balanced_accuracy_score, jaccard_score, matthews_cor
 
 from PIL import Image
 
+# add the parent folder to the python path to access convpoint library
+import sys
+sys.path.append('/content/perseverance/ConvPoint')
 import convpoint.knn.lib.python.nearest_neighbors as nearest_neighbors
 
 class bcolors:
@@ -221,9 +219,9 @@ def get_model(model_name, input_channels, output_channels, args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--processeddir', type=str, required=True, default='../../data/processed/')
-    parser.add_argument("--savedir", type=str, required=True, default='../../data/raw_results')
-	parser.add_argument("--trainingdir", type=str, required=True)
+    parser.add_argument('--processeddir', type=str, default='./data/processed/')
+    parser.add_argument("--savedir", type=str, default='./data/raw_results/')
+    parser.add_argument("--trainingdir", type=str)
     parser.add_argument('--block_size', type=float, default=8)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=16)
@@ -243,10 +241,10 @@ def main():
     training_folder = os.path.join(args.savedir, "{}_{}_nocolor{}_drop{}_lr{}_{}".format(
             args.model, args.npoints, args.nocolor, args.drop, args.lr, time_string))
 
-	train_dir = args.processed + '/train/pointcloud/'
-	test_dir = args.processed + '/test/pointcloud/'
-	filelist_train = [f for f in os.listdir(train_dir)]
-	filelist_test = [f for f in os.listdir(test_dir)]
+    train_dir = args.processeddir + '/train/pointcloud/'
+    test_dir = args.processeddir + '/test/pointcloud/'
+    filelist_train = [f for f in os.listdir(train_dir)]
+    filelist_test = [f for f in os.listdir(test_dir)]
 	
     N_CLASSES = 3
 
@@ -268,14 +266,14 @@ def main():
         print("Create the datasets...", end="", flush=True)
 
         ds = PartDataset(
-			filelist_train,
-			train_dir,
-			training=True,
-			block_size=args.block_size,
-			iteration_number=args.batch_size*args.iter,
-			npoints=args.npoints,
-			nocolor=args.nocolor
-		)
+          filelist_train,
+          train_dir,
+          training=True,
+          block_size=args.block_size,
+          iteration_number=args.batch_size*args.iter,
+          npoints=args.npoints,
+          nocolor=args.nocolor
+		    )
         train_loader = torch.utils.data.DataLoader(ds, batch_size=args.batch_size, shuffle=True, num_workers=args.threads)
         print("Done")
 
@@ -297,10 +295,10 @@ def main():
             # training
             net.train()
 
-			actuals = np.array([], dtype=np.int)
-			predictions = np.array([], dtype=np.int)
-			train_loss = 0
-			n = 0
+            actuals = np.array([], dtype=np.int)
+            predictions = np.array([], dtype=np.int)
+            train_loss = 0
+            n = 0
             t = tqdm(train_loader, ncols=100, desc="Epoch {}".format(epoch))
             for pts, features, seg in t:
                 features = features.cuda()
@@ -316,24 +314,20 @@ def main():
                 output_np = np.argmax(outputs.cpu().detach().numpy(), axis=2).copy()
                 target_np = seg.cpu().numpy().copy()
 				
-				actuals = np.concatenate((actuals, target_np.ravel()))
-				predictions = np.concatenate((predictions, output_np.ravel()))
+                actuals = np.concatenate((actuals, target_np.ravel()))
+                predictions = np.concatenate((predictions, output_np.ravel()))
 				
                 ba = f"{balanced_accuracy_score(actuals, predictions):.4f}"
                 mcc = f"{matthews_corrcoef(actuals, predictions):.4f}"
                 iou = f"{jaccard_score(actuals, predictions, average='micro'):.4f}"
 
                 train_loss += loss.detach().cpu().item()
-				n += 1
+                n += 1
 				
                 t.set_postfix(BA=wblue(ba), MCC=wblue(mcc), IOU=wblue(iou), LOSS=wblue(f"{train_loss/n:.4e}"))
 
             # save the checkpoints
-            torch.save(
-                os.path.join(training_folder, "state_dict.pth")), {
-                'epoch': epoch,
-                'state_dict': net.state_dict()
-            })
+            torch.save(os.path.join(training_folder, "state_dict.pth"), {'epoch': epoch, 'state_dict': net.state_dict()})
 
             # write the logs
             logs.write(f"{epoch} {ba} {mcc} {iou} {train_loss/n:.4e}\n")

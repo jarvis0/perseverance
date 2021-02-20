@@ -5,8 +5,8 @@ import semantic3D_utils.lib.python.semantic3D as Sem3D
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--rootdir', type=str, required=True, default='../../data/raw/')
-parser.add_argument("--savedir", type=str, required=True, default='../../data/processed/')
+parser.add_argument('--rootdir', type=str, default='./data/raw/')
+parser.add_argument("--savedir", type=str, default='./data/processed/')
 parser.add_argument("--voxel", type=float, default=0.1)
 parser.add_argument("--checkfiles", action="store_true")
 args = parser.parse_args()
@@ -31,8 +31,8 @@ def wred(str):
     return bcolors.FAIL+str+bcolors.ENDC
 
 
-train_dir = args.rootdir + '/TRAIN'
-test_dir = args.rootdir + '/TEST'
+train_dir = args.rootdir + 'TRAIN'
+test_dir = args.rootdir + 'TEST'
 filelist_train = [f.split('.')[0] for f in os.listdir(train_dir)]
 filelist_test = [f.split('.')[0] for f in os.listdir(test_dir)]
 
