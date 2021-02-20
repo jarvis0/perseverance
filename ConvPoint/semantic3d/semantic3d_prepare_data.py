@@ -5,8 +5,8 @@ import semantic3D_utils.lib.python.semantic3D as Sem3D
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--rootdir', '-s', help='Path to data folder')
-parser.add_argument("--savedir", type=str, default="./semantic3d_processed")
+parser.add_argument('--rootdir', type=str, required=True, default='../../data/raw/')
+parser.add_argument("--savedir", type=str, required=True, default='../../data/processed/')
 parser.add_argument("--voxel", type=float, default=0.1)
 parser.add_argument("--checkfiles", action="store_true")
 args = parser.parse_args()
@@ -31,53 +31,10 @@ def wred(str):
     return bcolors.FAIL+str+bcolors.ENDC
 
 
-filelist_train = [f.split('.')[0] for f in os.listdir(args.testdir) if os.path.isfile(os.path.join(args.testdir, f))][0: 18:]
-
-[
-	"M1v1",
-  "M1v2",
-  "M1v3",
-  "M1v4",
-  "M1v5",
-  "M1v6",
-  "M1v7",
-  "M1v8",
-  "M1v9",
-  "M1v10",
-  "M1v11",
-  "M1v12",
-  "M1v13",
-  "M1v14",
-  "M1v15",
-  "M1v16",
-  "M1v17",
-  "M1v18",
-  "M2v1",
-  "M2v2",
-  "M2v3",
-  "M2v4",
-  "M2v5",
-  "M2v6",
-  "M2v7",
-  "M2v8",
-  "M2v9",
-  "M2v10",
-  "M2v11",
-  "M2v12",
-  "M2v13",
-  "M2v14",
-  "M2v15",
-  "M2v16",
-  "M2v17",
-  "M2v18",
-    ]
-
-filelist_test = [
-"M1v19",
-"M1v20",
-"M2v19",
-"M2v20",
-        ]
+train_dir = args.rootdir + '/TRAIN'
+test_dir = args.rootdir + '/TEST'
+filelist_train = [f.split('.')[0] for f in os.listdir(train_dir)]
+filelist_test = [f.split('.')[0] for f in os.listdir(test_dir)]
 
 print("Creating train directories...", end="", flush=True)
 savedir = os.path.join(args.savedir, "train", "pointcloud_txt")
