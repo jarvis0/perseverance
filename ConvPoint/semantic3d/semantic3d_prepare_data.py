@@ -34,9 +34,9 @@ def wred(str):
 train_dir = args.rootdir + 'TRAIN'
 val_dir = args.rootdir + 'VAL'
 test_dir = args.rootdir + 'TEST'
-filelist_train = [f.split('.')[0] for f in os.listdir(train_dir)]
-filelist_val = [f.split('.')[0] for f in os.listdir(val_dir)]
-filelist_test = [f.split('.')[0] for f in os.listdir(test_dir)]
+filelist_train = [f.split('.')[0] for f in os.listdir(train_dir) if os.path.isfile(join(train_dir, f))]
+filelist_val = [f.split('.')[0] for f in os.listdir(val_dir) if os.path.isfile(join(val_dir, f))]
+filelist_test = [f.split('.')[0] for f in os.listdir(test_dir) if os.path.isfile(join(test_dir, f))]
 
 print("Creating train directories...", end="", flush=True)
 savedir = os.path.join(args.savedir, "train", "pointcloud_txt")
