@@ -32,8 +32,10 @@ def wred(str):
 
 
 train_dir = args.rootdir + 'TRAIN'
+val_dir = args.rootdir + 'VAL'
 test_dir = args.rootdir + 'TEST'
 filelist_train = [f.split('.')[0] for f in os.listdir(train_dir)]
+filelist_val = [f.split('.')[0] for f in os.listdir(val_dir)]
 filelist_test = [f.split('.')[0] for f in os.listdir(test_dir)]
 
 print("Creating train directories...", end="", flush=True)
@@ -43,7 +45,6 @@ savedir_numpy = os.path.join(args.savedir, "train", "pointcloud")
 os.makedirs(savedir_numpy, exist_ok=True)
 print("done")
 
-
 print("Generating train files...")
 for filename in filelist_train:
     print(wblue(filename))
@@ -51,16 +52,16 @@ for filename in filelist_train:
     filename_txt = filename+".txt"
     filename_labels = filename+".labels"
 
-    if os.path.exists(os.path.join(args.rootdir, "TRAIN", filename_txt)):
-        if os.path.exists(os.path.join(args.rootdir, "TRAIN", filename_labels)):
+    if os.path.exists(os.path.join(train_dir, filename_txt)):
+        if os.path.exists(os.path.join(train_dir, filename_labels)):
             
             #if checkfiles flag, do not compute points
             if args.checkfiles: 
                 continue
 
             # load file and voxelize
-            Sem3D.semantic3d_load_from_txt_voxel_labels(os.path.join(args.rootdir, "TRAIN", filename_txt),
-                                                        os.path.join(args.rootdir, "TRAIN", filename_labels),
+            Sem3D.semantic3d_load_from_txt_voxel_labels(os.path.join(train_dir, filename_txt),
+                                                        os.path.join(train_dir, filename_labels),
                                                         os.path.join(savedir, filename+"_voxels.txt"),
                                                         args.voxel
                                                         )
@@ -68,12 +69,46 @@ for filename in filelist_train:
             # save the numpy data
             np.save(os.path.join(savedir_numpy, filename+"_voxels"), np.loadtxt(os.path.join(savedir, filename+"_voxels.txt")).astype(np.float16))
         else:
-            print(wred(f'Error -- label file does not exists: {os.path.join(args.rootdir, "TRAIN", filename_labels)}'))
+            print(wred(f'Error -- label file does not exists: {os.path.join(train_dir, filename_labels)}'))
     else:
-        print(wred(f'Error -- points file does not exists: {os.path.join(args.rootdir, "TRAIN", filename_txt)}'))
-
+        print(wred(f'Error -- points file does not exists: {os.path.join(train_dir, filename_txt)}'))
 print("Done")
 
+print("Creating val directories...", end="", flush=True)
+savedir = os.path.join(args.savedir, "val", "pointcloud_txt")
+os.makedirs(savedir, exist_ok=True)
+savedir_numpy = os.path.join(args.savedir, "val", "pointcloud")
+os.makedirs(savedir_numpy, exist_ok=True)
+print("done")
+
+print("Generating val files...")
+for filename in filelist_val:
+    print(wblue(filename))
+    
+    filename_txt = filename+".txt"
+    filename_labels = filename+".labels"
+
+    if os.path.exists(os.path.join(val_dir, filename_txt)):
+        if os.path.exists(os.path.join(val_dir, filename_labels)):
+            
+            #if checkfiles flag, do not compute points
+            if args.checkfiles: 
+                continue
+
+            # load file and voxelize
+            Sem3D.semantic3d_load_from_txt_voxel_labels(os.path.join(val_dir, filename_txt),
+                                                        os.path.join(val_dir, filename_labels),
+                                                        os.path.join(savedir, filename+"_voxels.txt"),
+                                                        args.voxel
+                                                        )
+            
+            # save the numpy data
+            np.save(os.path.join(savedir_numpy, filename+"_voxels"), np.loadtxt(os.path.join(savedir, filename+"_voxels.txt")).astype(np.float16))
+        else:
+            print(wred(f'Error -- label file does not exists: {os.path.join(val_dir, filename_labels)}'))
+    else:
+        print(wred(f'Error -- points file does not exists: {os.path.join(val_dir, filename_txt)}'))
+print("Done")
 
 print("Creating test directories...", end="", flush=True)
 savedir = os.path.join(args.savedir, "test", "pointcloud_txt")
@@ -82,7 +117,6 @@ savedir_numpy = os.path.join(args.savedir, "test", "pointcloud")
 os.makedirs(savedir_numpy, exist_ok=True)
 print("done")
 
-
 print("Generating test files...")
 for filename in filelist_test:
     print(wgreen(filename))
@@ -90,14 +124,14 @@ for filename in filelist_test:
     filename_txt = filename+".txt"
     filename_labels = filename+".labels"
 
-    if os.path.exists(os.path.join(args.rootdir, "TEST", filename_txt)):
+    if os.path.exists(os.path.join(test_dir, filename_txt)):
             
         #if checkfiles flag, do not compute points
         if args.checkfiles: 
             continue
 
         # load file and voxelize
-        Sem3D.semantic3d_load_from_txt_voxel(os.path.join(args.rootdir, "TEST", filename_txt),
+        Sem3D.semantic3d_load_from_txt_voxel(os.path.join(test_dir, filename_txt),
                                                     os.path.join(savedir, filename+"_voxels.txt"),
                                                     args.voxel
                                                     )
@@ -105,6 +139,5 @@ for filename in filelist_test:
         # save the numpy data
         np.save(os.path.join(savedir_numpy, filename+"_voxels"), np.loadtxt(os.path.join(savedir, filename+"_voxels.txt")).astype(np.float16))
     else:
-        print(wred(f'Error -- point file does not exists: {os.path.join(args.rootdir, "TEST", filename_txt)}'))
-
+        print(wred(f'Error -- point file does not exists: {os.path.join(test_dir, filename_txt)}'))
 print("Done")

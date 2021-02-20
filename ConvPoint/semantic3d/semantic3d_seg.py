@@ -69,7 +69,7 @@ class PartDataset():
 
     def __init__ (self, filelist, folder,
                     training=False, 
-                    iteration_number = None,
+                    iteration_number=None,
                     block_size=8,
                     npoints=40,
                     nocolor=False):
@@ -244,6 +244,7 @@ def main():
             args.model, args.npoints, args.nocolor, args.drop, args.lr, time_string))
 
     train_dir = args.processeddir + '/train/pointcloud/'
+    val_dir = args.processeddir + '/'
     test_dir = args.processeddir + '/test/pointcloud/'
     filelist_train = [f for f in os.listdir(train_dir)]
     filelist_test = [f for f in os.listdir(test_dir)]
@@ -295,8 +296,7 @@ def main():
         # iterate over epochs
         for epoch in range(args.epochs):
 
-            #######
-            # training
+            ######## training
             net.train()
 
             actuals = np.array([], dtype=np.int)
@@ -332,8 +332,7 @@ def main():
                 t.set_postfix(OA=wblue(oa), MCC=wblue(mcc), IOU=wblue(iou), LOSS=wblue(f"{train_loss/cm.sum():.4e}"))
 
             # save the checkpoints
-            checkpoint_name = 'state_dict_'+str(epoch)+'.pth'
-            model_status_path = os.path.join(checkpoints_folder, checkpoint_name)
+            model_status_path = os.path.join(checkpoints_folder, 'state_dict_'+str(epoch)+'.pth')
             torch.save(net.state_dict(), model_status_path)
 
             # write the logs
