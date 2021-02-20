@@ -4,7 +4,10 @@ import torch.nn.functional as F
 import numpy as np
 import math
 
+import sys
+sys.path.append('/content/perseverance/')
 from global_tags import GlobalTags
+
 if GlobalTags.legacy_layer_base():
     from .legacy.layer_base import LayerBase
 else:

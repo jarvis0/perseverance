@@ -11,13 +11,14 @@ import torch.utils.data
 import torch.nn.functional as F
 from torchvision import transforms
 
-from sklearn.metrics import balanced_accuracy_score, jaccard_score, matthews_corrcoef
+from sklearn.metrics import confusion_matrix, matthews_corrcoef
 
 from PIL import Image
 
 # add the parent folder to the python path to access convpoint library
 import sys
 sys.path.append('/content/perseverance/ConvPoint')
+import utils.metrics as metrics
 import convpoint.knn.lib.python.nearest_neighbors as nearest_neighbors
 
 class bcolors:
@@ -220,7 +221,7 @@ def get_model(model_name, input_channels, output_channels, args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--processeddir', type=str, default='./data/processed/')
-    parser.add_argument("--savedir", type=str, default='./data/raw_results/')
+    parser.add_argument("--savedir", type=str, default='./data/training_results/')
     parser.add_argument("--trainingdir", type=str)
     parser.add_argument('--block_size', type=float, default=8)
     parser.add_argument("--epochs", type=int, default=50)
@@ -255,7 +256,7 @@ def main():
     else:
         net = get_model(args.model, input_channels=3, output_channels=N_CLASSES, args=args)
     if args.test:
-        net.load_state_dict(torch.load(os.path.join(args.trainingdir, "state_dict.pth")))
+        net.load_state_dict(torch.load(os.path.join(args.trainingdir, "state_dict.pth"))['state_dict'])
     net.cuda()
     print("Done")
 
@@ -297,8 +298,8 @@ def main():
 
             actuals = np.array([], dtype=np.int)
             predictions = np.array([], dtype=np.int)
+            cm = np.zeros((N_CLASSES, N_CLASSES))
             train_loss = 0
-            n = 0
             t = tqdm(train_loader, ncols=100, desc="Epoch {}".format(epoch))
             for pts, features, seg in t:
                 features = features.cuda()
@@ -311,26 +312,27 @@ def main():
                 loss.backward()
                 optimizer.step()
 
-                output_np = np.argmax(outputs.cpu().detach().numpy(), axis=2).copy()
-                target_np = seg.cpu().numpy().copy()
+                output_np = np.argmax(outputs.cpu().detach().numpy(), axis=2).copy().ravel()
+                target_np = seg.cpu().numpy().copy().ravel()
 				
-                actuals = np.concatenate((actuals, target_np.ravel()))
-                predictions = np.concatenate((predictions, output_np.ravel()))
-				
-                ba = f"{balanced_accuracy_score(actuals, predictions):.4f}"
+                actuals = np.concatenate((actuals, target_np))
+                predictions = np.concatenate((predictions, output_np))
+                cm_ = confusion_matrix(target_np, output_np, labels=list(range(N_CLASSES)))
+                cm += cm_
+
+                oa = f"{metrics.stats_overall_accuracy(cm):.4f}"
+                iou = f"{metrics.stats_iou_per_class(cm)[0]:.4f}"
                 mcc = f"{matthews_corrcoef(actuals, predictions):.4f}"
-                iou = f"{jaccard_score(actuals, predictions, average='micro'):.4f}"
 
                 train_loss += loss.detach().cpu().item()
-                n += 1
 				
-                t.set_postfix(BA=wblue(ba), MCC=wblue(mcc), IOU=wblue(iou), LOSS=wblue(f"{train_loss/n:.4e}"))
+                t.set_postfix(OA=wblue(oa), MCC=wblue(mcc), IOU=wblue(iou), LOSS=wblue(f"{train_loss/cm.sum():.4e}"))
 
             # save the checkpoints
-            torch.save(os.path.join(training_folder, "state_dict.pth"), {'epoch': epoch, 'state_dict': net.state_dict()})
+            torch.save({'epoch': epoch, 'state_dict': net.state_dict()}, os.path.join(training_folder, "state_dict.pth"))
 
             # write the logs
-            logs.write(f"{epoch} {ba} {mcc} {iou} {train_loss/n:.4e}\n")
+            logs.write(f"{epoch} {oa} {mcc} {iou} {train_loss/cm.sum():.4e}\n")
             logs.flush()
 
         logs.close()
