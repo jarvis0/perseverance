@@ -381,11 +381,13 @@ def main():
 
             # saving labels
             save_fname = os.path.join(args.trainingdir, "testing_results", filename)
+
             scores = scores.argmax(1)
             np.savetxt(save_fname,scores,fmt='%d')
 
             if args.savepts:
                 save_fname = os.path.join(args.trainingdir, "testing_results", f"{filename}_pts.txt")
+
                 xyzrgb = np.concatenate([xyzrgb, np.expand_dims(scores,1)], axis=1)
                 np.savetxt(save_fname,xyzrgb,fmt=['%.4f','%.4f','%.4f','%d'])
 
