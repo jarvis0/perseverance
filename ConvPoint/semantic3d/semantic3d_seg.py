@@ -257,7 +257,7 @@ def main():
     else:
         net = get_model(args.model, input_channels=3, output_channels=N_CLASSES, args=args)
     if args.test:
-        net.load_state_dict(torch.load(os.path.join(args.trainingdir, "state_dict_"+args.epoch+".pth")))
+        net.load_state_dict(torch.load(os.path.join(args.trainingdir, "checkpoints", "state_dict_"+args.epoch+".pth")))
     net.cuda()
     print("Done")
 
@@ -334,8 +334,7 @@ def main():
             # save the checkpoints
             checkpoint_name = 'state_dict_'+str(epoch)+'.pth'
             model_status_path = os.path.join(checkpoints_folder, checkpoint_name)
-            print(model_status_path)
-            torch.save({'epoch': epoch, 'state_dict': net.state_dict()}, model_status_path)
+            torch.save(net.state_dict(), model_status_path)
 
             # write the logs
             logs.write(f"{epoch} {oa} {mcc} {iou} {train_loss/cm.sum():.4e}\n")
