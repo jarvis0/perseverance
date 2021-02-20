@@ -377,15 +377,15 @@ def main():
             scores = np.exp(scores) / np.exp(scores).sum(1)[:,None]
             scores = np.nan_to_num(scores)
 
-            os.makedirs(os.path.join(args.trainingdir, "test_results"), exist_ok=True)
+            os.makedirs(os.path.join(args.trainingdir, "testing_results"), exist_ok=True)
 
             # saving labels
-            save_fname = os.path.join(args.trainingdir, "test_results", filename)
+            save_fname = os.path.join(args.trainingdir, "testing_results", filename)
             scores = scores.argmax(1)
             np.savetxt(save_fname,scores,fmt='%d')
 
             if args.savepts:
-                save_fname = os.path.join(args.trainingdir, "test_results", f"{filename}_pts.txt")
+                save_fname = os.path.join(args.trainingdir, "testing_results", f"{filename}_pts.txt")
                 xyzrgb = np.concatenate([xyzrgb, np.expand_dims(scores,1)], axis=1)
                 np.savetxt(save_fname,xyzrgb,fmt=['%.4f','%.4f','%.4f','%d'])
 
