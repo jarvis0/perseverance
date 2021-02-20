@@ -225,6 +225,7 @@ def main():
     parser.add_argument("--trainingdir", type=str)
     parser.add_argument('--block_size', type=float, default=8)
     parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--epoch", type=str)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--iter", type=int, default=1000)
     parser.add_argument("--npoints", type=int, default=40)
@@ -256,7 +257,7 @@ def main():
     else:
         net = get_model(args.model, input_channels=3, output_channels=N_CLASSES, args=args)
     if args.test:
-        net.load_state_dict(torch.load(os.path.join(args.trainingdir, "state_dict.pth"))['state_dict'])
+        net.load_state_dict(torch.load(os.path.join(args.trainingdir, "state_dict_"+args.epoch+".pth")))
     net.cuda()
     print("Done")
 
@@ -285,6 +286,8 @@ def main():
         
         # create the root folder
         os.makedirs(training_folder, exist_ok=True)
+        checkpoints_folder = training_folder+'/checkpoints'
+        os.makedirs(checkpoints_folder, exist_ok=True)
         
         # create the log file
         logs = open(os.path.join(training_folder, "log.txt"), "w")
@@ -329,7 +332,10 @@ def main():
                 t.set_postfix(OA=wblue(oa), MCC=wblue(mcc), IOU=wblue(iou), LOSS=wblue(f"{train_loss/cm.sum():.4e}"))
 
             # save the checkpoints
-            torch.save({'epoch': epoch, 'state_dict': net.state_dict()}, os.path.join(training_folder, "state_dict.pth"))
+            checkpoint_name = 'state_dict_'+str(epoch)+'.pth'
+            model_status_path = os.path.join(checkpoints_folder, checkpoint_name)
+            print(model_status_path)
+            torch.save({'epoch': epoch, 'state_dict': net.state_dict()}, model_status_path)
 
             # write the logs
             logs.write(f"{epoch} {oa} {mcc} {iou} {train_loss/cm.sum():.4e}\n")
