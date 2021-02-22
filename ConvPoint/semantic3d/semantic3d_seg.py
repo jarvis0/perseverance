@@ -67,11 +67,11 @@ def rotate_point_cloud_z(batch_data):
 # Part dataset only for training / validation
 class PartDataset():
 
-    def __init__ (self, filelist, folder,
+    def __init__(self, filelist, folder,
                     training=False, 
                     iteration_number=None,
                     block_size=8,
-                    npoints=40,
+                    npoints=700,
                     nocolor=False):
 
         self.folder = folder
@@ -84,17 +84,18 @@ class PartDataset():
         self.iterations = iteration_number
         self.verbose = False
 
-
         self.transform = transforms.ColorJitter(
             brightness=0.4,
             contrast=0.4,
             saturation=0.4)
 
-    def __getitem__(self, index):
-        
+    def __getitem__(self, index): 
+        # print(index)       
         # load the data
-        index = random.randint(0, len(self.filelist)-1)
+        if self.training:
+          index = random.randint(0, len(self.filelist)-1)  # index % len(self.filelist)  # 
         pts = np.load(os.path.join(self.folder, self.filelist[index]))
+        # print(os.path.join(self.folder, self.filelist[index]))
 
         # get the features
         fts = pts[:,3:6]
@@ -105,8 +106,7 @@ class PartDataset():
         # get the point coordinates
         pts = pts[:, :3]
 
-
-        # pick a random point
+        """# pick a random point
         pt_id = random.randint(0, pts.shape[0]-1)
         pt = pts[pt_id]
 
@@ -116,13 +116,14 @@ class PartDataset():
         mask = np.logical_and(mask_x, mask_y)
         pts = pts[mask]
         lbs = lbs[mask]
-        fts = fts[mask]
+        fts = fts[mask]"""
         
         # random selection
-        choice = np.random.choice(pts.shape[0], self.npoints, replace=True)
-        pts = pts[choice]
-        lbs = lbs[choice]
-        fts = fts[choice]
+        if self.training:
+          choice = np.random.choice(pts.shape[0], self.npoints, replace=True)
+          pts = pts[choice]
+          lbs = lbs[choice]
+          fts = fts[choice]
 
         # data augmentation
         if self.training:
@@ -149,69 +150,6 @@ class PartDataset():
     def __len__(self):
         return self.iterations
 
-
-class PartDatasetTest():
-
-    def compute_mask(self, pt, bs):
-        # build the mask
-        mask_x = np.logical_and(self.xyzrgb[:,0]<pt[0]+bs/2, self.xyzrgb[:,0]>pt[0]-bs/2)
-        mask_y = np.logical_and(self.xyzrgb[:,1]<pt[1]+bs/2, self.xyzrgb[:,1]>pt[1]-bs/2)
-        mask = np.logical_and(mask_x, mask_y)
-        return mask
-
-    def __init__ (self, filename, folder,
-                    block_size=8,
-                    npoints=40,
-                    test_step=0.8,
-					nocolor=False
-	):
-
-        self.folder = folder
-        self.bs = block_size
-        self.npoints = npoints
-        self.verbose = False
-        self.nocolor = nocolor
-        self.filename = filename
-
-        # load the points
-        self.xyzrgb = np.load(os.path.join(self.folder, self.filename))
-        step = test_step
-        discretized = ((self.xyzrgb[:,:2]).astype(float)/step).astype(int)
-        self.pts = np.unique(discretized, axis=0)
-        self.pts = self.pts.astype(np.float)*step
-
-    def __getitem__(self, index):
-        
-        # get the data
-        mask = self.compute_mask(self.pts[index], self.bs)
-        pts = self.xyzrgb[mask]
-
-        # choose right number of points
-        choice = np.random.choice(pts.shape[0], self.npoints, replace=True)
-        pts = pts[choice]
-
-        # labels will contain indices in the original point cloud
-        lbs = np.where(mask)[0][choice]
-
-        # separate between features and points
-        if self.nocolor:
-            fts = np.ones((pts.shape[0], 1))
-        else:
-            fts = pts[:,3:6]
-            fts = fts.astype(np.float32)
-            fts = fts / 255 - 0.5
-
-        pts = pts[:, :3].copy()
-
-        pts = torch.from_numpy(pts).float()
-        fts = torch.from_numpy(fts).float()
-        lbs = torch.from_numpy(lbs).long()
-
-        return pts, fts, lbs
-
-    def __len__(self):
-        return len(self.pts)
-
 def get_model(model_name, input_channels, output_channels, args):
     if model_name == "SegBig":
         from networks.network_seg import SegBig as Net
@@ -222,13 +160,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--processeddir', type=str, default='./data/processed/')
     parser.add_argument("--savedir", type=str, default='./data/training_results/')
-    parser.add_argument("--trainingdir", type=str)
+    parser.add_argument("--trainingdir", type=str, required=True, help='SegBig batch_size_lr')
     parser.add_argument('--block_size', type=float, default=8)
     parser.add_argument("--epochs", type=int, default=50)
-    parser.add_argument("--epoch", type=str)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--iter", type=int, default=1000)
-    parser.add_argument("--npoints", type=int, default=40)
+    parser.add_argument("--npoints", type=int, default=700)
     parser.add_argument("--lr", type=int, default=1e-3)
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--nocolor", action="store_true")
@@ -239,14 +176,10 @@ def main():
     parser.add_argument("--drop", type=float, default=0.5)
     args = parser.parse_args()
 
-    time_string = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-    training_folder = os.path.join(args.savedir, "{}_{}_nocolor{}_drop{}_lr{}_{}".format(
-            args.model, args.npoints, args.nocolor, args.drop, args.lr, time_string))
-
     train_dir = args.processeddir + '/train/pointcloud/'
-    val_dir = args.processeddir + '/'
+    val_dir = args.processeddir + '/val/pointcloud'
     test_dir = args.processeddir + '/test/pointcloud/'
-    filelist_train = [f for f in os.listdir(train_dir)]
+    filelist_train = [f for f in os.listdir(train_dir)] + [f for f in os.listdir(val_dir)]
     filelist_test = [f for f in os.listdir(test_dir)]
 	
     N_CLASSES = 3
@@ -258,16 +191,14 @@ def main():
     else:
         net = get_model(args.model, input_channels=3, output_channels=N_CLASSES, args=args)
     if args.test:
-        net.load_state_dict(torch.load(os.path.join(args.trainingdir, "checkpoints", "state_dict_"+args.epoch+".pth")))
+        net.load_state_dict(torch.load(os.path.join(args.trainingdir, final_model.pth)))
     net.cuda()
     print("Done")
 
 
     ##### TRAIN
     if not args.test:
-
         print("Create the datasets...", end="", flush=True)
-
         ds = PartDataset(
           filelist_train,
           train_dir,
@@ -276,26 +207,23 @@ def main():
           iteration_number=args.batch_size*args.iter,
           npoints=args.npoints,
           nocolor=args.nocolor
-		    )
+		)
         train_loader = torch.utils.data.DataLoader(ds, batch_size=args.batch_size, shuffle=True, num_workers=args.threads)
         print("Done")
-
 
         print("Create optimizer...", end="", flush=True)
         optimizer = torch.optim.Adam(net.parameters(), args.lr)
         print("Done")
         
         # create the root folder
-        os.makedirs(training_folder, exist_ok=True)
-        checkpoints_folder = training_folder+'/checkpoints'
-        os.makedirs(checkpoints_folder, exist_ok=True)
+        os.makedirs(args.trainingdir, exist_ok=True)
         
         # create the log file
-        logs = open(os.path.join(training_folder, "log.txt"), "w")
+        logs = open(os.path.join(args.trainingdir, "final_log.txt"), "w")
 
         # iterate over epochs
+        # weight = torch.from_numpy(np.array([])).float()
         for epoch in range(args.epochs):
-
             ######## training
             net.train()
 
@@ -311,7 +239,7 @@ def main():
                 
                 optimizer.zero_grad()
                 outputs = net(features, pts)
-                loss = F.cross_entropy(outputs.view(-1, N_CLASSES), seg.view(-1))
+                loss = F.cross_entropy(outputs.view(-1, N_CLASSES), seg.view(-1), weight=None)
                 loss.backward()
                 optimizer.step()
 
@@ -332,7 +260,7 @@ def main():
                 t.set_postfix(OA=wblue(oa), MCC=wblue(mcc), IOU=wblue(iou), LOSS=wblue(f"{train_loss/cm.sum():.4e}"))
 
             # save the checkpoints
-            model_status_path = os.path.join(checkpoints_folder, 'state_dict_'+str(epoch)+'.pth')
+            model_status_path = os.path.join(args.trainingdir, 'final_model.pth')
             torch.save(net.state_dict(), model_status_path)
 
             # write the logs
@@ -340,11 +268,63 @@ def main():
             logs.flush()
 
         logs.close()
-            
 
     ##### TEST
-    else:
+    else:        
+        print("Create the datasets...", end="", flush=True)
+        ds_test = PartDataset(
+            filelist_val,
+            train_dir,
+            training=False,
+            iteration_number=len(filelist_val),
+            nocolor=args.nocolor,
+	    )
+        test_loader = torch.utils.data.DataLoader(ds_test, batch_size=1, shuffle=False, num_workers=args.threads)
+        print("Done")
+
+        logs = open(os.path.join(args.trainingdir, "final_log.txt"), "w")
+
+        os.makedirs(os.path.join(args.trainingdir, "testing_results"), exist_ok=True)
+        actuals = np.array([], dtype=np.int)
+        predictions = np.array([], dtype=np.int)
         net.eval()
+        with torch.no_grad():
+            n = 0
+            for pts, features, seg in test_loader:
+                features = features.cuda()
+                pts = pts.cuda()
+                seg = seg.cuda()
+                
+                outputs = net(features, pts)
+
+                output_np = np.argmax(outputs.cpu().detach().numpy(), axis=2).copy().ravel()
+                target_np = seg.cpu().numpy().copy().ravel()
+
+                actuals = np.concatenate((actuals, target_np))
+                predictions = np.concatenate((predictions, output_np))
+
+                save_fname = os.path.join(args.trainingdir, "testing_results", filelist_test[n])
+                np.savetxt(save_fname, output_np, fmt='%d')
+                n += 1
+
+        cm_test = confusion_matrix(actuals, predictions, labels=list(range(N_CLASSES)))
+        oa_test = f"{metrics.stats_overall_accuracy(cm_test):.4f}"
+        iou_test = f"{metrics.stats_iou_per_class(cm_test)[0]:.4f}"
+        mcc_test = f"{matthews_corrcoef(actuals, predictions):.4f}"
+        
+        print(f"TEST: oa={oa_test} mcc={iou_test} iou={mcc_test}")
+    
+    # write the logs
+    logs.write(f"TEST {oa_test} {iou_test} {mcc_test}\n")
+    logs.flush()
+    logs.close()
+
+    
+
+
+
+
+
         for filename in filelist_test:
             print(filename)
             ds = PartDatasetTest(

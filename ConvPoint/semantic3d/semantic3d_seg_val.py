@@ -19,7 +19,6 @@ from PIL import Image
 import sys
 sys.path.append('/content/perseverance/ConvPoint')
 import utils.metrics as metrics
-import convpoint.knn.lib.python.nearest_neighbors as nearest_neighbors
 
 class bcolors:
     HEADER = '\033[95m'
@@ -36,17 +35,6 @@ def wblue(str):
     return bcolors.OKBLUE+str+bcolors.ENDC
 def wgreen(str):
     return bcolors.OKGREEN+str+bcolors.ENDC
-
-def nearest_correspondance(pts_src, pts_dest, data_src, K=1):
-    print(pts_dest.shape)
-    indices = nearest_neighbors.knn(pts_src.copy(), pts_dest.copy(), K, omp=True)
-    print(indices.shape)
-    if K==1:
-        indices = indices.ravel()
-        data_dest = data_src[indices]
-    else:
-        data_dest = data_src[indices].mean(1)
-    return data_dest
 
 def rotate_point_cloud_z(batch_data):
     """ Randomly rotate the point clouds to augument the dataset
@@ -225,6 +213,7 @@ def main():
     # create the log file
     logs = open(os.path.join(training_folder, "log.txt"), "w")
     # iterate over epochs
+    # weight = torch.from_numpy(np.array([])).float()
     for epoch in range(args.epochs):
         ######## training
         net.train()
@@ -241,7 +230,7 @@ def main():
             
             optimizer.zero_grad()
             outputs = net(features, pts)
-            loss = F.cross_entropy(outputs.view(-1, N_CLASSES), seg.view(-1))
+            loss = F.cross_entropy(outputs.view(-1, N_CLASSES), seg.view(-1), weight=None)
             loss.backward()
             optimizer.step()
 
@@ -253,8 +242,8 @@ def main():
             cm_ = confusion_matrix(target_np, output_np, labels=list(range(N_CLASSES)))
             cm_train += cm_
 
-            oa_train = f"{metrics.stats_overall_accuracy(cm_train):.4f}"
-            iou_train = f"{metrics.stats_iou_per_class(cm_train)[0]:.4f}"
+            oa_train = f"{metrics.stats_overall_accuracy(cm_train_iter):.4f}"
+            iou_train = f"{metrics.stats_iou_per_class(cm_train_iter)[0]:.4f}"
             mcc_train= f"{matthews_corrcoef(actuals, predictions):.4f}"
             train_loss += loss.detach().cpu().item()
 			
@@ -267,6 +256,7 @@ def main():
         # validation
         actuals = np.array([], dtype=np.int)
         predictions = np.array([], dtype=np.int)
+        net.eval()
         with torch.no_grad():
             for pts, features, seg in val_loader:
                 features = features.cuda()
@@ -274,7 +264,6 @@ def main():
                 seg = seg.cuda()
                 
                 outputs = net(features, pts)
-                # print(seg.shape)
 
                 output_np = np.argmax(outputs.cpu().detach().numpy(), axis=2).copy().ravel()
                 target_np = seg.cpu().numpy().copy().ravel()
@@ -282,11 +271,10 @@ def main():
                 actuals = np.concatenate((actuals, target_np))
                 predictions = np.concatenate((predictions, output_np))
 
-            cm_val = confusion_matrix(target_np, output_np, labels=list(range(N_CLASSES)))
-
-            oa_val = f"{metrics.stats_overall_accuracy(cm_val):.4f}"
-            iou_val = f"{metrics.stats_iou_per_class(cm_val)[0]:.4f}"
-            mcc_val = f"{matthews_corrcoef(actuals, predictions):.4f}"
+        cm_val = confusion_matrix(target_np, output_np, labels=list(range(N_CLASSES)))
+        oa_val = f"{metrics.stats_overall_accuracy(cm_val):.4f}"
+        iou_val = f"{metrics.stats_iou_per_class(cm_val)[0]:.4f}"
+        mcc_val = f"{matthews_corrcoef(actuals, predictions):.4f}"
         
         print(f"TRAIN: oa={oa_train} mcc={mcc_train} iou={iou_train} loss={train_loss/cm_train.sum():.4e}")
         print(f"VALID: oa={oa_val} mcc={mcc_val} iou={iou_val}")
