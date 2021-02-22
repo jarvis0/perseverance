@@ -273,13 +273,13 @@ def main():
     else:        
         print("Create the datasets...", end="", flush=True)
         ds_test = PartDataset(
-            filelist_val,
+            filelist_test,
             train_dir,
             training=False,
-            iteration_number=len(filelist_val),
+            iteration_number=len(filelist_test),
             nocolor=args.nocolor,
 	    )
-        test_loader = torch.utils.data.DataLoader(ds_test, batch_size=1, shuffle=False, num_workers=args.threads)
+        test_loader = torch.utils.data.DataLoader(ds_test, batch_size=1, shuffle=False, num_workers=1)
         print("Done")
 
         logs = open(os.path.join(args.trainingdir, "final_log.txt"), "w")
