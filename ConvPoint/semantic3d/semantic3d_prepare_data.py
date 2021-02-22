@@ -119,25 +119,29 @@ print("done")
 
 print("Generating test files...")
 for filename in filelist_test:
-    print(wgreen(filename))
+    print(wblue(filename))
     
     filename_txt = filename+".txt"
     filename_labels = filename+".labels"
 
     if os.path.exists(os.path.join(test_dir, filename_txt)):
+        if os.path.exists(os.path.join(test_dir, filename_labels)):
             
-        #if checkfiles flag, do not compute points
-        if args.checkfiles: 
-            continue
+            #if checkfiles flag, do not compute points
+            if args.checkfiles: 
+                continue
 
-        # load file and voxelize
-        Sem3D.semantic3d_load_from_txt_voxel(os.path.join(test_dir, filename_txt),
-                                                    os.path.join(savedir, filename+"_voxels.txt"),
-                                                    args.voxel
-                                                    )
-        
-        # save the numpy data
-        np.save(os.path.join(savedir_numpy, filename+"_voxels"), np.loadtxt(os.path.join(savedir, filename+"_voxels.txt")).astype(np.float16))
+            # load file and voxelize
+            Sem3D.semantic3d_load_from_txt_voxel_labels(os.path.join(test_dir, filename_txt),
+                                                        os.path.join(test_dir, filename_labels),
+                                                        os.path.join(savedir, filename+"_voxels.txt"),
+                                                        args.voxel
+                                                        )
+            
+            # save the numpy data
+            np.save(os.path.join(savedir_numpy, filename+"_voxels"), np.loadtxt(os.path.join(savedir, filename+"_voxels.txt")).astype(np.float16))
+        else:
+            print(wred(f'Error -- label file does not exists: {os.path.join(test_dir, filename_labels)}'))
     else:
-        print(wred(f'Error -- point file does not exists: {os.path.join(test_dir, filename_txt)}'))
+        print(wred(f'Error -- points file does not exists: {os.path.join(test_dir, filename_txt)}'))
 print("Done")
