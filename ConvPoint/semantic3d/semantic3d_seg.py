@@ -162,7 +162,7 @@ def main():
     parser.add_argument("--savedir", type=str, default='./data/training_results/')
     parser.add_argument("--trainingdir", type=str, required=True, help='SegBig batch_size_lr')
     parser.add_argument('--block_size', type=float, default=8)
-    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--best_epoch", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--iter", type=int, default=1000)
     parser.add_argument("--npoints", type=int, default=700)
@@ -191,7 +191,7 @@ def main():
     else:
         net = get_model(args.model, input_channels=3, output_channels=N_CLASSES, args=args)
     if args.test:
-        net.load_state_dict(torch.load(os.path.join(args.trainingdir, final_model.pth)))
+        net.load_state_dict(torch.load(os.path.join(args.trainingdir, "final_model.pth")))
     net.cuda()
     print("Done")
 
@@ -223,7 +223,7 @@ def main():
 
         # iterate over epochs
         # weight = torch.from_numpy(np.array([])).float()
-        for epoch in range(args.epochs):
+        for epoch in range(args.best_epoch+1):
             ######## training
             net.train()
 
@@ -306,7 +306,9 @@ def main():
                 save_fname = os.path.join(args.trainingdir, "testing_results", filelist_test[n])
                 np.savetxt(save_fname, output_np, fmt='%d')
                 n += 1
-
+        print(actuals.shape, predictions.shape)
+        print(actuals)
+        print(predictions)
         cm_test = confusion_matrix(actuals, predictions, labels=list(range(N_CLASSES)))
         oa_test = f"{metrics.stats_overall_accuracy(cm_test):.4f}"
         iou_test = f"{metrics.stats_iou_per_class(cm_test)[0]:.4f}"
@@ -314,68 +316,10 @@ def main():
         
         print(f"TEST: oa={oa_test} mcc={iou_test} iou={mcc_test}")
     
-    # write the logs
-    logs.write(f"TEST {oa_test} {iou_test} {mcc_test}\n")
-    logs.flush()
-    logs.close()
-
-    
-
-
-
-
-
-        for filename in filelist_test:
-            print(filename)
-            ds = PartDatasetTest(
-				filename,
-				test_dir,
-				block_size=args.block_size,
-				npoints=args.npoints,
-				test_step=args.test_step,
-				nocolor=args.nocolor,
-			)
-            loader = torch.utils.data.DataLoader(ds, batch_size=args.batch_size, shuffle=False, num_workers=args.threads)
-
-            xyzrgb = ds.xyzrgb[:,:3]
-            scores = np.zeros((xyzrgb.shape[0], N_CLASSES))
-            with torch.no_grad():
-                t = tqdm(loader, ncols=80)
-                for pts, features, indices in t:
-                    features = features.cuda()
-                    pts = pts.cuda()
-                    outputs = net(features, pts)
-
-                    outputs_np = outputs.cpu().numpy().reshape((-1, N_CLASSES))
-                    scores[indices.cpu().numpy().ravel()] += outputs_np
-            
-            mask = np.logical_not(scores.sum(1)==0)
-            scores = scores[mask]
-            pts_src = xyzrgb[mask]
-
-            # create the scores for all points
-            scores = nearest_correspondance(pts_src.astype(np.float32), xyzrgb.astype(np.float32), scores, K=1)
-
-            # compute softmax
-            scores = scores - scores.max(axis=1)[:,None]
-            scores = np.exp(scores) / np.exp(scores).sum(1)[:,None]
-            scores = np.nan_to_num(scores)
-
-            os.makedirs(os.path.join(args.trainingdir, "testing_results"), exist_ok=True)
-
-            # saving labels
-            save_fname = os.path.join(args.trainingdir, "testing_results", filename)
-
-            scores = scores.argmax(1)
-            np.savetxt(save_fname,scores,fmt='%d')
-
-            if args.savepts:
-                save_fname = os.path.join(args.trainingdir, "testing_results", f"{filename}_pts.txt")
-
-                xyzrgb = np.concatenate([xyzrgb, np.expand_dims(scores,1)], axis=1)
-                np.savetxt(save_fname,xyzrgb,fmt=['%.4f','%.4f','%.4f','%d'])
-
-            # break
+        # write the logs
+        logs.write(f"TEST {oa_test} {iou_test} {mcc_test}\n")
+        logs.flush()
+        logs.close()
 
 if __name__ == '__main__':
     main()
