@@ -274,7 +274,7 @@ def main():
         print("Create the datasets...", end="", flush=True)
         ds_test = PartDataset(
             filelist_test,
-            train_dir,
+            test_dir,
             training=False,
             iteration_number=len(filelist_test),
             nocolor=args.nocolor,
