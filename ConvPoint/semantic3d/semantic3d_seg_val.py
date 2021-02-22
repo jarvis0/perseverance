@@ -71,7 +71,7 @@ class PartDataset():
                     training=False, 
                     iteration_number=None,
                     block_size=8,
-                    npoints=128,
+                    npoints=700,
                     nocolor=False):
 
         self.folder = folder
@@ -163,7 +163,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--iter", type=int, default=1000)
-    parser.add_argument("--npoints", type=int, default=128)
+    parser.add_argument("--npoints", type=int, default=700)
     parser.add_argument("--lr", type=int, default=1e-3)
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--nocolor", action="store_true")
