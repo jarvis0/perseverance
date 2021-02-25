@@ -151,7 +151,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--iter", type=int, default=1000)
-    parser.add_argument("--npoints", type=int, default=700)
+    parser.add_argument("--npoints", type=int, default=750)
     parser.add_argument("--lr", type=int, default=1e-3)
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--nocolor", action="store_true")
@@ -169,7 +169,7 @@ def main():
     filelist_train = [f for f in os.listdir(train_dir)]
     filelist_val = [f for f in os.listdir(val_dir)]
 	
-    N_CLASSES = 3
+    N_CLASSES = 4
 
     # create model
     print("Creating the network...", end="", flush=True)
@@ -191,14 +191,16 @@ def main():
         nocolor=args.nocolor,
 	)
     train_loader = torch.utils.data.DataLoader(ds_train, batch_size=args.batch_size, shuffle=True, num_workers=args.threads)
+    
     ds_val = PartDataset(
       filelist_val,
-      train_dir,
+      val_dir,########
       training=False,
       iteration_number=len(filelist_val),
       nocolor=args.nocolor,
 	)
     val_loader = torch.utils.data.DataLoader(ds_val, batch_size=1, shuffle=False, num_workers=args.threads)
+    
     print("Done")
 
     print("Create optimizer...", end="", flush=True)
@@ -220,7 +222,7 @@ def main():
 
         actuals = np.array([], dtype=np.int)
         predictions = np.array([], dtype=np.int)
-        cm_train = np.zeros((N_CLASSES, N_CLASSES))
+        cm_train_iter = np.zeros((N_CLASSES, N_CLASSES)) #####iter
         train_loss = 0
         t = tqdm(train_loader, ncols=100, desc="Epoch {}".format(epoch))
         for pts, features, seg in t:
@@ -230,7 +232,7 @@ def main():
             
             optimizer.zero_grad()
             outputs = net(features, pts)
-            loss = F.cross_entropy(outputs.view(-1, N_CLASSES), seg.view(-1), weight=None)
+            loss = F.cross_entropy(outputs.view(-1, N_CLASSES), seg.view(-1))
             loss.backward()
             optimizer.step()
 
@@ -240,14 +242,14 @@ def main():
             actuals = np.concatenate((actuals, target_np))
             predictions = np.concatenate((predictions, output_np))
             cm_ = confusion_matrix(target_np, output_np, labels=list(range(N_CLASSES)))
-            cm_train += cm_
+            cm_train_iter += cm_     ######iter
 
             oa_train = f"{metrics.stats_overall_accuracy(cm_train_iter):.4f}"
             iou_train = f"{metrics.stats_iou_per_class(cm_train_iter)[0]:.4f}"
             mcc_train= f"{matthews_corrcoef(actuals, predictions):.4f}"
             train_loss += loss.detach().cpu().item()
 			
-            t.set_postfix(OA=wblue(oa_train), MCC=wblue(mcc_train), IOU=wblue(iou_train), LOSS=wblue(f"{train_loss/cm_train.sum():.4e}"))
+            t.set_postfix(OA=wblue(oa_train), MCC=wblue(mcc_train), IOU=wblue(iou_train), LOSS=wblue(f"{train_loss/cm_train_iter.sum():.4e}"))
 
         # save the checkpoints
         model_status_path = os.path.join(checkpoints_folder, 'state_dict_'+str(epoch)+'.pth')
@@ -276,11 +278,11 @@ def main():
         iou_val = f"{metrics.stats_iou_per_class(cm_val)[0]:.4f}"
         mcc_val = f"{matthews_corrcoef(actuals, predictions):.4f}"
         
-        print(f"TRAIN: oa={oa_train} mcc={mcc_train} iou={iou_train} loss={train_loss/cm_train.sum():.4e}")
+        print(f"TRAIN: oa={oa_train} mcc={mcc_train} iou={iou_train} loss={train_loss/cm_train_iter.sum():.4e}")#########
         print(f"VALID: oa={oa_val} mcc={mcc_val} iou={iou_val}")
 
         # write the logs
-        logs.write(f"{epoch} {oa_train} {mcc_train} {iou_train} {train_loss/cm_train.sum():.4e} {oa_val} {mcc_val} {iou_val}\n")
+        logs.write(f"{epoch} {oa_train} {mcc_train} {iou_train} {train_loss/cm_train_iter.sum():.4e} {oa_val} {mcc_val} {iou_val}\n")#######
         logs.flush()
     logs.close()
 

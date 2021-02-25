@@ -165,7 +165,7 @@ def main():
     parser.add_argument("--best_epoch", type=int, default=50)
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--iter", type=int, default=1000)
-    parser.add_argument("--npoints", type=int, default=700)
+    parser.add_argument("--npoints", type=int, default=750)
     parser.add_argument("--lr", type=int, default=1e-3)
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--nocolor", action="store_true")
@@ -182,7 +182,7 @@ def main():
     filelist_train = [f for f in os.listdir(train_dir)] + [f for f in os.listdir(val_dir)]
     filelist_test = [f for f in os.listdir(test_dir)]
 	
-    N_CLASSES = 3
+    N_CLASSES = 4
 
     # create model
     print("Creating the network...", end="", flush=True)
