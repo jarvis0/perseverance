@@ -330,7 +330,7 @@ def main():
         logs.flush()
         logs.close()
 
-    os.remove(trainval_dir)
+    shutil.rmtree(trainval_dir)
 
 if __name__ == '__main__':
     main()
