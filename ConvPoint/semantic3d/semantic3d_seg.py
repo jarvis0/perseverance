@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 from datetime import datetime
 import os
+import shutil
 import random
 from tqdm import tqdm
 
@@ -179,9 +180,17 @@ def main():
     train_dir = args.processeddir + '/train/pointcloud/'
     val_dir = args.processeddir + '/val/pointcloud'
     test_dir = args.processeddir + '/test/pointcloud/'
-    filelist_train = [f for f in os.listdir(train_dir)] + [f for f in os.listdir(val_dir)]
+    trainval_dir = args.processeddir + '/trainval/pointcloud/'
+    os.makedirs(trainval_dir, exist_ok=True)
+    filelist_train = [f for f in os.listdir(train_dir)]
+    for file_name in filelist_train:
+        shutil.move(os.path.join(train_dir, file_name), trainval_dir)
+    filelist_val = [f for f in os.listdir(val_dir)]
+    for file_name in filelist_val:
+        shutil.move(os.path.join(val_dir, file_name), trainval_dir)
+    filelist_trainval = [f for f in os.listdir(trainval_dir)]
     filelist_test = [f for f in os.listdir(test_dir)]
-	
+
     N_CLASSES = 4
 
     # create model
@@ -200,8 +209,8 @@ def main():
     if not args.test:
         print("Create the datasets...", end="", flush=True)
         ds = PartDataset(
-          filelist_train,
-          train_dir,
+          filelist_trainval,
+          trainval_dir,
           training=True,
           block_size=args.block_size,
           iteration_number=args.batch_size*args.iter,
@@ -320,6 +329,8 @@ def main():
         logs.write(f"TEST {oa_test} {iou_test} {mcc_test}\n")
         logs.flush()
         logs.close()
+
+    os.remove(trainval_dir)
 
 if __name__ == '__main__':
     main()

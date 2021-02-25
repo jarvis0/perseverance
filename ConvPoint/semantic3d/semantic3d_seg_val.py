@@ -209,8 +209,6 @@ def main():
     
     # create the root folder
     os.makedirs(training_folder, exist_ok=True)
-    checkpoints_folder = training_folder+'/checkpoints'
-    os.makedirs(checkpoints_folder, exist_ok=True)
     
     # create the log file
     logs = open(os.path.join(training_folder, "log.txt"), "w")
@@ -222,7 +220,7 @@ def main():
 
         actuals = np.array([], dtype=np.int)
         predictions = np.array([], dtype=np.int)
-        cm_train_iter = np.zeros((N_CLASSES, N_CLASSES)) #####iter
+        cm_train = np.zeros((N_CLASSES, N_CLASSES))
         train_loss = 0
         t = tqdm(train_loader, ncols=100, desc="Epoch {}".format(epoch))
         for pts, features, seg in t:
@@ -242,17 +240,17 @@ def main():
             actuals = np.concatenate((actuals, target_np))
             predictions = np.concatenate((predictions, output_np))
             cm_ = confusion_matrix(target_np, output_np, labels=list(range(N_CLASSES)))
-            cm_train_iter += cm_     ######iter
+            cm_train += cm_
 
-            oa_train = f"{metrics.stats_overall_accuracy(cm_train_iter):.4f}"
-            iou_train = f"{metrics.stats_iou_per_class(cm_train_iter)[0]:.4f}"
+            oa_train = f"{metrics.stats_overall_accuracy(cm_train):.4f}"
+            iou_train = f"{metrics.stats_iou_per_class(cm_train)[0]:.4f}"
             mcc_train= f"{matthews_corrcoef(actuals, predictions):.4f}"
             train_loss += loss.detach().cpu().item()
 			
-            t.set_postfix(OA=wblue(oa_train), MCC=wblue(mcc_train), IOU=wblue(iou_train), LOSS=wblue(f"{train_loss/cm_train_iter.sum():.4e}"))
+            t.set_postfix(OA=wblue(oa_train), MCC=wblue(mcc_train), IOU=wblue(iou_train), LOSS=wblue(f"{train_loss/cm_train.sum():.4e}"))
 
         # save the checkpoints
-        model_status_path = os.path.join(checkpoints_folder, 'state_dict_'+str(epoch)+'.pth')
+        model_status_path = os.path.join(training_folder, 'val_state_dict.pth')
         torch.save(net.state_dict(), model_status_path)
 
         # validation
@@ -278,11 +276,11 @@ def main():
         iou_val = f"{metrics.stats_iou_per_class(cm_val)[0]:.4f}"
         mcc_val = f"{matthews_corrcoef(actuals, predictions):.4f}"
         
-        print(f"TRAIN: oa={oa_train} mcc={mcc_train} iou={iou_train} loss={train_loss/cm_train_iter.sum():.4e}")#########
+        print(f"TRAIN: oa={oa_train} mcc={mcc_train} iou={iou_train} loss={train_loss/cm_train.sum():.4e}")#########
         print(f"VALID: oa={oa_val} mcc={mcc_val} iou={iou_val}")
 
         # write the logs
-        logs.write(f"{epoch} {oa_train} {mcc_train} {iou_train} {train_loss/cm_train_iter.sum():.4e} {oa_val} {mcc_val} {iou_val}\n")#######
+        logs.write(f"{epoch} {oa_train} {mcc_train} {iou_train} {train_loss/cm_train.sum():.4e} {oa_val} {mcc_val} {iou_val}\n")#######
         logs.flush()
     logs.close()
 

@@ -125,7 +125,7 @@ for filename in filelist_test:
     filename_labels = filename+".labels"
 
     if os.path.exists(os.path.join(test_dir, filename_txt)):
-        #if os.path.exists(os.path.join(test_dir, filename_labels)):
+        if os.path.exists(os.path.join(test_dir, filename_labels)):
             
             #if checkfiles flag, do not compute points
             if args.checkfiles: 
@@ -140,8 +140,8 @@ for filename in filelist_test:
             
             # save the numpy data
             np.save(os.path.join(savedir_numpy, filename+"_voxels"), np.loadtxt(os.path.join(savedir, filename+"_voxels.txt")).astype(np.float16))
-            #else:
-            #print(wred(f'Error -- label file does not exists: {os.path.join(test_dir, filename_labels)}'))
+        else:
+            print(wred(f'Error -- label file does not exists: {os.path.join(test_dir, filename_labels)}'))
     else:
         print(wred(f'Error -- points file does not exists: {os.path.join(test_dir, filename_txt)}'))
 print("Done")
