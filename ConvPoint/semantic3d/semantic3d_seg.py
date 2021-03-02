@@ -191,7 +191,7 @@ def main():
     filelist_trainval = [f for f in os.listdir(trainval_dir)]
     filelist_test = [f for f in os.listdir(test_dir)]
 
-    N_CLASSES = 4
+    N_CLASSES = 5
 
     # create model
     print("Creating the network...", end="", flush=True)

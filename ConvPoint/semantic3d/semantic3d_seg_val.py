@@ -161,15 +161,15 @@ def main():
     args = parser.parse_args()
 
     time_string = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-    training_folder = os.path.join(args.savedir, "{}_{}_nocolor{}_drop{}_lr{}_{}".format(
-            args.model, args.npoints, args.nocolor, args.drop, args.lr, time_string))
+    training_folder = os.path.join(args.savedir, "{}_{}_nocolor{}_drop{}_lr{}_batch{}_epochs{}_iter{}_{}".format(
+            args.model, args.npoints, args.nocolor, args.drop, args.lr,args.batch_size,args.epochs,args.iter, time_string))
 
     train_dir = args.processeddir + 'train/pointcloud/'
     val_dir = args.processeddir + 'val/pointcloud/'
     filelist_train = [f for f in os.listdir(train_dir)]
     filelist_val = [f for f in os.listdir(val_dir)]
 	
-    N_CLASSES = 4
+    N_CLASSES = 5
 
     # create model
     print("Creating the network...", end="", flush=True)
