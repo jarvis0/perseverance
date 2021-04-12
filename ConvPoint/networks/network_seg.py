@@ -159,13 +159,13 @@ class SegBig(nn.Module):
         x0, _ = self.cv0(x, input_pts, 16)
         x0 = self.relu(apply_bn(x0, self.bn0))
 
-        x1, pts1 = self.cv1(x0, input_pts, 16, 2048)
+        x1, pts1 = self.cv1(x0, input_pts, 16, 512)
         x1 = self.relu(apply_bn(x1, self.bn1))
 
-        x2, pts2 = self.cv2(x1, pts1, 16, 1024)
+        x2, pts2 = self.cv2(x1, pts1, 16, 256)
         x2 = self.relu(apply_bn(x2, self.bn2))
 
-        x3, pts3 = self.cv3(x2, pts2, 16, 256)
+        x3, pts3 = self.cv3(x2, pts2, 16, 128)
         x3 = self.relu(apply_bn(x3, self.bn3))
 
         x4, pts4 = self.cv4(x3, pts3, 8, 64)
