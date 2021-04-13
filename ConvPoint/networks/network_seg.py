@@ -50,13 +50,13 @@ class SegSmall(nn.Module):
     def forward(self, x, input_pts, return_features=False):
 
 
-        # x1, pts1 = self.cv1(x, input_pts, 16, 2048)
+        # x1, pts1 = self.cv1(x, input_pts, 16, 512)
         # x1 = F.relu(apply_bn(x1, self.bn1))
 
-        x2, pts2 = self.cv2(x, input_pts, 16, 1024)
+        x2, pts2 = self.cv2(x, input_pts, 16, 256)
         x2 = F.relu(apply_bn(x2, self.bn2))
 
-        x3, pts3 = self.cv3(x2, pts2, 16, 256)
+        x3, pts3 = self.cv3(x2, pts2, 16, 128)
         x3 = F.relu(apply_bn(x3, self.bn3))
 
         x4, pts4 = self.cv4(x3, pts3, 8, 64)
